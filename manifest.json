@@ -1,0 +1,286 @@
+{
+  "$schema": "https://raw.githubusercontent.com/t8y2/dbx/main/plugins/manifest.schema.json",
+  "manifest_version": 1,
+  "id": "io.github.nixing178.archery",
+  "name": "Archery 审核查询",
+  "version": "0.1.0",
+  "publisher": "nixing178",
+  "description": "在 DBX 内浏览 Archery 实例、执行 SQL 查询、提交与审核 SQL 上线工单、处理待办、查看历史与表结构。",
+  "source": "https://github.com/nixing178/dbx-plugin-archery",
+  "homepage": "https://github.com/nixing178/dbx-plugin-archery",
+  "icon": "assets/plugin.svg",
+  "engines": {
+    "dbx": ">=0.6.43",
+    "host_api": "1"
+  },
+  "permissions": [
+    "host.workbench"
+  ],
+  "entrypoints": {
+    "backend": {
+      "executable": "bin/dbx-plugin-archery"
+    },
+    "ui": {
+      "root": "ui",
+      "entry": "ui/index.html"
+    }
+  },
+  "contributions": [
+    {
+      "type": "connection-provider",
+      "id": "io.github.nixing178.archery.connection",
+      "label": "Archery",
+      "icon": "assets/connection.svg",
+      "database_type": "archery",
+      "description": "连接 Archery SQL 审核查询平台（会话登录，支持 2FA）。",
+      "fields": [
+        {
+          "key": "display_name",
+          "label": "连接名称",
+          "type": "text",
+          "binding": "name",
+          "default": "Archery",
+          "required": true
+        },
+        {
+          "key": "scheme",
+          "label": "协议",
+          "type": "select",
+          "binding": "config",
+          "default": "https",
+          "options": [
+            { "label": "HTTPS", "value": "https" },
+            { "label": "HTTP（内网）", "value": "http" }
+          ]
+        },
+        {
+          "key": "host",
+          "label": "IP / 域名",
+          "type": "text",
+          "binding": "host",
+          "placeholder": "archery.example.com",
+          "required": true
+        },
+        {
+          "key": "port",
+          "label": "端口",
+          "type": "number",
+          "binding": "port",
+          "default": 443,
+          "required": true
+        },
+        {
+          "key": "base_path",
+          "label": "上下文路径",
+          "type": "text",
+          "binding": "config",
+          "default": "",
+          "placeholder": "/archery"
+        },
+        {
+          "key": "username",
+          "label": "用户名",
+          "type": "text",
+          "binding": "username",
+          "required": true
+        },
+        {
+          "key": "password",
+          "label": "密码",
+          "type": "password",
+          "binding": "password",
+          "placeholder": "仅保存在本机 sidecar 内存中"
+        },
+        {
+          "key": "auth_mode",
+          "label": "认证方式",
+          "type": "select",
+          "binding": "config",
+          "default": "session",
+          "options": [
+            { "label": "会话登录（推荐）", "value": "session" },
+            { "label": "JWT（实验性，仅超管）", "value": "jwt" }
+          ]
+        },
+        {
+          "key": "twofa_type",
+          "label": "2FA 验证方式",
+          "type": "select",
+          "binding": "config",
+          "default": "totp",
+          "options": [
+            { "label": "身份验证器（TOTP）", "value": "totp" },
+            { "label": "短信验证码", "value": "sms" }
+          ]
+        },
+        {
+          "key": "twofa_phone",
+          "label": "2FA 手机号",
+          "type": "text",
+          "binding": "config",
+          "default": "",
+          "placeholder": "选择短信验证时必填"
+        },
+        {
+          "key": "read_only",
+          "label": "只读模式",
+          "type": "boolean",
+          "binding": "config",
+          "default": true
+        },
+        {
+          "key": "default_limit_num",
+          "label": "默认返回行数",
+          "type": "number",
+          "binding": "config",
+          "default": 100
+        },
+        {
+          "key": "query_timeout_secs",
+          "label": "查询超时（秒）",
+          "type": "number",
+          "binding": "config",
+          "default": 120
+        },
+        {
+          "key": "connect_timeout_secs",
+          "label": "连接超时（秒）",
+          "type": "number",
+          "binding": "config",
+          "default": 20
+        },
+        {
+          "key": "keep_alive_secs",
+          "label": "会话续期间隔（秒，0 表示关闭）",
+          "type": "number",
+          "binding": "config",
+          "default": 120
+        },
+        {
+          "key": "insecure_skip_verify",
+          "label": "跳过 TLS 证书校验",
+          "type": "boolean",
+          "binding": "config",
+          "default": false
+        }
+      ],
+      "workbench": "io.github.nixing178.archery.workbench",
+      "capabilities": ["test", "connect", "disconnect"]
+    },
+    {
+      "type": "workbench",
+      "id": "io.github.nixing178.archery.workbench",
+      "label": "Archery 审核查询",
+      "description": "浏览实例资源、执行 SQL 查询、查看查询历史与表结构。",
+      "icon": "assets/plugin.svg"
+    }
+  ],
+  "localizations": {
+    "en": {
+      "name": "Archery Console",
+      "description": "Browse Archery instances, run SQL queries, submit and review SQL release tickets, and inspect history and table structures inside DBX.",
+      "contributions": {
+        "io.github.nixing178.archery.connection": {
+          "label": "Archery",
+          "description": "Connect to an Archery SQL audit and query platform with session login and 2FA.",
+          "fields": {
+            "display_name": { "label": "Connection name" },
+            "scheme": {
+              "label": "Protocol",
+              "options": { "https": "HTTPS", "http": "HTTP (internal network)" }
+            },
+            "host": { "label": "Host / domain", "placeholder": "archery.example.com" },
+            "port": { "label": "Port" },
+            "base_path": { "label": "Context path", "placeholder": "/archery" },
+            "username": { "label": "Username" },
+            "password": {
+              "label": "Password",
+              "placeholder": "Kept in the local sidecar process only"
+            },
+            "auth_mode": {
+              "label": "Authentication",
+              "options": {
+                "session": "Session login (recommended)",
+                "jwt": "JWT (experimental, superuser only)"
+              }
+            },
+            "twofa_type": {
+              "label": "2FA method",
+              "options": {
+                "totp": "Authenticator (TOTP)",
+                "sms": "SMS code"
+              }
+            },
+            "twofa_phone": {
+              "label": "2FA phone",
+              "placeholder": "Required for SMS codes"
+            },
+            "read_only": { "label": "Read-only mode" },
+            "default_limit_num": { "label": "Default row limit" },
+            "query_timeout_secs": { "label": "Query timeout (seconds)" },
+            "connect_timeout_secs": { "label": "Connect timeout (seconds)" },
+            "keep_alive_secs": { "label": "Session keep-alive interval (seconds, 0 disables)" },
+            "insecure_skip_verify": { "label": "Skip TLS certificate verification" }
+          }
+        },
+        "io.github.nixing178.archery.workbench": {
+          "label": "Archery Console",
+          "description": "Browse instance resources, run SQL queries, submit SQL release tickets, inspect history and table structures."
+        }
+      }
+    },
+    "zh-CN": {
+      "name": "Archery 审核查询",
+      "description": "在 DBX 内浏览 Archery 实例、执行 SQL 查询、提交与审核 SQL 上线工单、查看历史与表结构。",
+      "contributions": {
+        "io.github.nixing178.archery.connection": {
+          "label": "Archery 连接",
+          "description": "连接 Archery SQL 审核查询平台（会话登录，支持 2FA）。",
+          "fields": {
+            "display_name": { "label": "连接名称" },
+            "scheme": {
+              "label": "协议",
+              "options": { "https": "HTTPS", "http": "HTTP（内网）" }
+            },
+            "host": { "label": "IP / 域名", "placeholder": "archery.example.com" },
+            "port": { "label": "端口" },
+            "base_path": { "label": "上下文路径", "placeholder": "/archery" },
+            "username": { "label": "用户名" },
+            "password": {
+              "label": "密码",
+              "placeholder": "仅保存在本机 sidecar 内存中"
+            },
+            "auth_mode": {
+              "label": "认证方式",
+              "options": {
+                "session": "会话登录（推荐）",
+                "jwt": "JWT（实验性，仅超管）"
+              }
+            },
+            "twofa_type": {
+              "label": "2FA 验证方式",
+              "options": {
+                "totp": "身份验证器（TOTP）",
+                "sms": "短信验证码"
+              }
+            },
+            "twofa_phone": {
+              "label": "2FA 手机号",
+              "placeholder": "选择短信验证时必填"
+            },
+            "read_only": { "label": "只读模式" },
+            "default_limit_num": { "label": "默认返回行数" },
+            "query_timeout_secs": { "label": "查询超时（秒）" },
+            "connect_timeout_secs": { "label": "连接超时（秒）" },
+            "keep_alive_secs": { "label": "会话续期间隔（秒，0 表示关闭）" },
+            "insecure_skip_verify": { "label": "跳过 TLS 证书校验" }
+          }
+        },
+        "io.github.nixing178.archery.workbench": {
+          "label": "Archery 审核查询",
+          "description": "浏览实例资源、执行 SQL 查询、提交 SQL 上线工单、查看查询历史与表结构。"
+        }
+      }
+    }
+  }
+}

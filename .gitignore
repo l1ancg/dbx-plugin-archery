@@ -1,0 +1,9 @@
+node_modules/
+ui/
+dist/
+/preview/
+test-results/
+backend/bin/
+*.dbxp
+*.log
+.DS_Store
