@@ -8473,13 +8473,14 @@ button {
 .workflow-page .workflow-table tbody td {
   padding: 8px 10px;
   vertical-align: middle;
-  cursor: default;
+  cursor: pointer;
 }
 
-/* 操作列只放一枚按钮，左右各留 4px 够用，窄窗口才不会被裁掉 */
+/* 操作列点的是按钮本身，光标保持默认，整行跳转在该列被屏蔽 */
 .workflow-page .workflow-table tbody td.privilege-ops {
   padding-right: 4px;
   padding-left: 4px;
+  cursor: default;
 }
 
 .workflow-page .workflow-table tbody tr {

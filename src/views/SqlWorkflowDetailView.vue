@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import { archeryApi } from "../api";
 import { t } from "../i18n";
 import { describeError } from "../lib/errors";
@@ -43,6 +43,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   back: [];
+  /** 工单数据已更新（详情页自己刷新，父级据此在后台同步列表）。 */
   updated: [];
   toast: [text: string];
   /** 「查看提交信息 / 上线其他实例」：把本工单的提交内容带给提交页，由上层切换到整页表单。 */
@@ -66,7 +67,10 @@ const logKeyword = ref("");
 const logLoading = ref(false);
 const logError = ref("");
 
-const status = computed(() => detail.value.status || props.row.status);
+/** 动作后回查到的最新状态：详情接口不返回状态，只能从工单列表取。 */
+const statusOverride = ref("");
+/** 当前状态：详情里的状态优先，其次是动作后的回查值，最后是列表行快照。 */
+const status = computed(() => detail.value.status || statusOverride.value || props.row.status);
 /** 状态胶囊：与 SQL 上线列表页共用 privilege-status 的语义色。 */
 const statusMeta = computed(() => workflowStatusMeta(status.value));
 const typeText = computed(() => {
@@ -74,11 +78,12 @@ const typeText = computed(() => {
   if (label === "OFFLINE") return t("workflow.syntaxOffline");
   return label || t("workflow.syntaxOther");
 });
-const canAudit = computed(() => canAuditWorkflow(props.row.status));
-const canExecute = computed(() => canExecuteWorkflow(props.row.status));
-const canCancel = computed(() => canCancelWorkflow(props.row.status));
+/** 可执行动作按「详情里的最新状态」判断：审批后状态会变，按钮组要跟着换。 */
+const canAudit = computed(() => canAuditWorkflow(status.value));
+const canExecute = computed(() => canExecuteWorkflow(status.value));
+const canCancel = computed(() => canCancelWorkflow(status.value));
 const rollbackVisible = computed(() =>
-  canRollbackWorkflow(props.row.status, props.row.isBackup),
+  canRollbackWorkflow(status.value, props.row.isBackup),
 );
 
 /** 详情页解析失败时用列表行兜底，保证关键信息仍然可读（缺的列宁可不显示也不编造）。 */
@@ -282,20 +287,40 @@ async function downloadRollback(): Promise<void> {
   }
 }
 
-function onActionDone(): void {
-  const kind = actionKind.value;
-  actionKind.value = "";
-  // 改时间窗不改变工单状态，留在详情页刷新即可；其余动作会让工单离开当前节点。
-  if (kind === "alterRunDate") {
-    void load();
-    return;
-  }
+/** 动作后工单可能进入下一个节点：留在详情页刷新，父级只在后台同步列表数据。 */
+async function refreshAfterAction(): Promise<void> {
+  await load();
+  await refreshStatus();
   emit("updated");
+}
+
+/**
+ * 回查工单当前状态：详情接口不返回状态，只能用列表接口按工单名搜出这条工单。
+ * 查不到就沿用列表行的旧状态，页面其余部分照常展示。
+ */
+async function refreshStatus(): Promise<void> {
+  try {
+    const page = await archeryApi.sqlWorkflows({
+      limit: 100,
+      offset: 0,
+      search: props.row.workflowName,
+    });
+    const fresh = (page.rows ?? []).find((row) => row.id === props.row.id);
+    if (fresh) statusOverride.value = fresh.status;
+  } catch {
+    // 回查失败不打断流程：状态保持旧值，按钮组仍按旧状态显示。
+  }
+}
+
+function onActionDone(): void {
+  actionKind.value = "";
+  void refreshAfterAction();
 }
 
 function onAudited(): void {
   auditOpen.value = false;
-  emit("updated");
+  // 审批通过后工单换节点：详情页不退出，刷新审批流与状态即可继续下一步。
+  void refreshAfterAction();
 }
 
 /** 两个预填按钮共用的取值来源：详情标题 + 其他信息 + SQL 列表，缺失时用列表行兜底。 */
@@ -323,6 +348,15 @@ function openOtherInstance(): void {
 }
 
 onMounted(load);
+
+/** 换工单时清掉上一条的回查状态，并重新拉详情。 */
+watch(
+  () => props.row.id,
+  () => {
+    statusOverride.value = "";
+    void load();
+  },
+);
 </script>
 
 <template>

@@ -126,6 +126,11 @@ function onDetailClosed(): void {
   void load();
 }
 
+/** 详情页里审批后工单状态变了：待办列表在后台同步，详情页继续停留。 */
+function onDetailUpdated(): void {
+  void load();
+}
+
 onMounted(load);
 </script>
 
@@ -134,7 +139,7 @@ onMounted(load);
     v-if="sqlDetail"
     :row="sqlDetail"
     @back="onDetailClosed"
-    @updated="onDetailClosed"
+    @updated="onDetailUpdated"
     @toast="(text) => emit('toast', text)"
   />
 

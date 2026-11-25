@@ -223,10 +223,11 @@ function onSubmitted(): void {
   void load();
 }
 
-/** 详情页的动作改变了工单状态，回列表后重新拉一次。 */
-function onDetailUpdated(): void {
-  detailRow.value = null;
-  void load();
+/** 详情页的动作改变了工单状态：详情页留在原地，列表数据在后台同步。 */
+async function onDetailUpdated(): Promise<void> {
+  await load();
+  const fresh = rows.value.find((row) => row.id === detailRow.value?.id);
+  if (fresh) detailRow.value = fresh;
 }
 
 onMounted(() => {
@@ -395,13 +396,14 @@ onMounted(() => {
                 <tr
                   v-for="(item, index) in displayRows"
                   :key="item.row.id"
+                  class="is-clickable"
                   :style="{ animationDelay: `${Math.min(index, 9) * 24}ms` }"
+                  @click="detailRow = item.row"
                 >
                   <td class="privilege-title">
                     <button
                       class="privilege-title-link"
                       :title="item.row.workflowName"
-                      @click="detailRow = item.row"
                     >
                       {{ item.row.workflowName }}
                     </button>
@@ -442,7 +444,8 @@ onMounted(() => {
                   </td>
                   <td class="workflow-ident" :title="item.row.dbName">{{ item.row.dbName }}</td>
                   <td :title="item.row.groupName">{{ item.row.groupName }}</td>
-                  <td class="privilege-ops">
+                  <!-- 操作列内部的点击不触发行跳转 -->
+                  <td class="privilege-ops" @click.stop>
                     <button class="btn btn-quiet btn-xs workflow-log" @click="logRow = item.row">
                       <NavIcon name="clock" :size="12" />
                       <span>{{ t("privilege.log") }}</span>
